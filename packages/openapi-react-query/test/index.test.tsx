@@ -792,6 +792,42 @@ describe("client", () => {
 
         await waitFor(() => rendered.findByText("data: Hello, status: success"));
       });
+
+      it("should resolve mutation options properly for onError and onSettled", async () => {
+        const fetchClient = createFetchClient<paths>({ baseUrl });
+        const client = createClient(fetchClient);
+
+        useMockRequestHandler({
+          baseUrl,
+          method: "put",
+          path: "/comment",
+          status: 200,
+          body: undefined,
+        });
+
+        const { result } = renderHook(() => client.useMutation("put", "/comment",
+          {
+            onMutate: () => {
+              const someArray = [1,2,3]
+              const someString = "abc"
+              return { someArray, someString }
+            },
+            onError: (err, _, onMutateResult, context) => {
+              if (onMutateResult) {
+                console.log(onMutateResult.someArray)
+                console.log(onMutateResult.someString)
+              }
+            },
+            // Always refetch after error or success:
+            onSettled: (_data, _error, _variables, onMutateResult, context) => {
+              if (onMutateResult) {
+                console.log(onMutateResult.someArray)
+                console.log(onMutateResult.someString)
+              }
+            }
+          }
+        ), { wrapper });
+      });
     });
 
     describe("mutateAsync", () => {
